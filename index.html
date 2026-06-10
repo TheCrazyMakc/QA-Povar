@@ -217,7 +217,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>🥘<s>Не</s>Щадящий стол</h1>
+    <h1>🥘 Щадящий стол</h1>
     <div class="sub">Рецепты при аутоиммунном гастрите — синхронизация с облаком</div>
     <div class="sync-status" id="syncStatus">🔄 Синхронизация...</div>
 
@@ -228,14 +228,8 @@
 </div>
 
 <script>
-    // Ключ будет подставлен автоматически при сборке GitHub Actions
     const SUPABASE_URL = "https://cditcyoskzzgpzkhzpyd.supabase.co";
     const SUPABASE_ANON_KEY = window.SUPABASE_KEY || null;
-
-    if (!SUPABASE_ANON_KEY) {
-        document.getElementById('syncStatus').innerHTML = '⚠️ Ошибка: ключ не загружен';
-        console.error('Ключ Supabase не найден');
-    }
 
     const sections = [
         { id: "breakfast", name: "🍳 Завтрак" },
@@ -249,11 +243,48 @@
         breakfast: [], snack: [], lunch: [], afternoon: [], dinner: []
     };
 
-    async function supabaseRequest(method, path, body = null) {
-        if (!SUPABASE_ANON_KEY) {
-            throw new Error('Ключ Supabase не загружен');
+    // Загрузка фото в Storage
+    async function uploadImage(file, recipeId) {
+        const fileName = `${recipeId}_${Date.now()}.jpg`;
+        const filePath = `recipes/${fileName}`;
+        
+        const url = `${SUPABASE_URL}/storage/v1/object/recipe-photos/${filePath}`;
+        const headers = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': file.type
+        };
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: file
+        });
+        
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки фото');
         }
         
+        return `${SUPABASE_URL}/storage/v1/object/public/recipe-photos/${filePath}`;
+    }
+
+    // Удаление фото из Storage
+    async function deleteImage(imageUrl) {
+        if (!imageUrl || !imageUrl.includes('storage')) return;
+        
+        const path = imageUrl.split('/public/recipe-photos/')[1];
+        if (!path) return;
+        
+        const url = `${SUPABASE_URL}/storage/v1/object/recipe-photos/${path}`;
+        const headers = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
+        
+        await fetch(url, { method: 'DELETE', headers });
+    }
+
+    async function supabaseRequest(method, path, body = null) {
         const url = `${SUPABASE_URL}/rest/v1/${path}`;
         const headers = {
             'apikey': SUPABASE_ANON_KEY,
@@ -286,7 +317,7 @@
                         title: recipe.title,
                         ingredients: recipe.ingredients,
                         method: recipe.method,
-                        img: recipe.image_base64
+                        img: recipe.image_url
                     });
                 }
             }
@@ -301,7 +332,7 @@
         }
     }
 
-    async function addRecipeToCloud(sectionId, recipe) {
+    async function addRecipeToCloud(sectionId, recipe, imageUrl) {
         try {
             const newRecipe = {
                 id: recipe.id,
@@ -309,8 +340,9 @@
                 title: recipe.title,
                 ingredients: recipe.ingredients,
                 method: recipe.method,
-                image_base64: recipe.img || null
+                image_url: imageUrl || null
             };
+            
             await supabaseRequest('POST', 'recipes', newRecipe);
             return true;
         } catch (error) {
@@ -343,29 +375,25 @@
         return Date.now() + '-' + Math.random().toString(36).substr(2, 8);
     }
 
-    function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
-    }
-
     async function addRecipe(sectionId, newRecipe, imageFile) {
+        const id = generateId();
+        let imageUrl = null;
+        
         if (imageFile) {
             try {
-                newRecipe.img = await fileToBase64(imageFile);
+                imageUrl = await uploadImage(imageFile, id);
             } catch (error) {
                 console.error("Ошибка загрузки изображения:", error);
+                alert('Ошибка загрузки фото');
+                return;
             }
         }
         
-        const id = generateId();
         const recipeWithId = { ...newRecipe, id };
         
-        const success = await addRecipeToCloud(sectionId, recipeWithId);
+        const success = await addRecipeToCloud(sectionId, recipeWithId, imageUrl);
         if (success) {
+            recipeWithId.img = imageUrl;
             recipesData[sectionId].push(recipeWithId);
             renderCurrentSection(sectionId);
             document.getElementById('syncStatus').innerHTML = '✅ Сохранено в облаке';
@@ -428,16 +456,19 @@
                 return;
             }
             
-            let newImg = recipe.img;
+            let newImageUrl = recipe.img;
             if (imageFile) {
-                newImg = await fileToBase64(imageFile);
+                if (recipe.img) {
+                    await deleteImage(recipe.img);
+                }
+                newImageUrl = await uploadImage(imageFile, rId);
             }
             
             const updatedRecipe = {
                 title: newTitle,
                 ingredients: newIngredients,
                 method: newMethod,
-                image_base64: newImg
+                image_url: newImageUrl
             };
             
             const success = await updateRecipeInCloud(rId, updatedRecipe);
@@ -445,7 +476,7 @@
                 recipe.title = newTitle;
                 recipe.ingredients = newIngredients;
                 recipe.method = newMethod;
-                recipe.img = newImg;
+                recipe.img = newImageUrl;
                 renderCurrentSection(sId);
                 document.getElementById('syncStatus').innerHTML = '✅ Обновлено в облаке';
                 setTimeout(() => {
@@ -459,8 +490,13 @@
     }
 
     async function deleteRecipe(sectionId, recipeId) {
+        const recipe = recipesData[sectionId].find(r => r.id === recipeId);
+        
         const success = await deleteRecipeFromCloud(recipeId);
         if (success) {
+            if (recipe && recipe.img) {
+                await deleteImage(recipe.img);
+            }
             recipesData[sectionId] = recipesData[sectionId].filter(r => r.id !== recipeId);
             renderCurrentSection(sectionId);
             document.getElementById('syncStatus').innerHTML = '🗑 Удалено из облака';
@@ -555,8 +591,7 @@
             const newRecipe = {
                 title: title,
                 ingredients: ingredients,
-                method: method,
-                img: null
+                method: method
             };
             
             await addRecipe(sectionId, newRecipe, imageFile);
