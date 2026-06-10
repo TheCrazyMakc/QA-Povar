@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рецепты при аутоиммунном гастрите</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #fef7e8;
+            color: #2c2418;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #a55233;
+        }
+        .sub {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #7a5a4a;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2c7a8;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: #f0e0cc;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+            color: #4a2e22;
+        }
+        .tab-btn.active {
+            background: #a55233;
+            color: white;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        .recipe-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: 0.2s;
+        }
+        .recipe-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #ddd9cf;
+        }
+        .recipe-content {
+            padding: 16px;
+        }
+        .recipe-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        .ingredients, .method {
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        .ingredients strong, .method strong {
+            color: #a55233;
+        }
+        .card-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .edit-btn, .delete-btn {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .edit-btn:hover {
+            background: #e2c7a8;
+        }
+        .delete-btn:hover {
+            background: #f3c1b0;
+            border-color: #a55233;
+        }
+        .add-recipe-form {
+            background: #fff3e6;
+            border-radius: 28px;
+            padding: 20px;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .form-row {
+            margin-bottom: 15px;
+        }
+        .form-row input, .form-row textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 40px;
+            border: 1px solid #e2c7a8;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        .form-row textarea {
+            border-radius: 20px;
+            resize: vertical;
+        }
+        .form-row label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4a2e22;
+        }
+        .image-preview {
+            margin-top: 10px;
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+        }
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        button.submit-btn {
+            background: #a55233;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .empty-msg {
+            text-align: center;
+            padding: 40px;
+            color: #7a5a4a;
+        }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .file-input-label {
+            display: block;
+            padding: 10px 14px;
+            background: white;
+            border: 1px solid #e2c7a8;
+            border-radius: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .file-input-label:hover {
+            background: #e2c7a8;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #a55233;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: #b2967c;
+        }
+        .sync-status {
+            text-align: center;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+            color: #6b8c5c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🥘 Щадящий стол</h1>
+    <div class="sub">Рецепты при аутоиммунном гастрите — синхронизация с облаком</div>
+    <div class="sync-status" id="syncStatus">🔄 Синхронизация...</div>
+
+    <div class="tabs" id="tabsContainer"></div>
+    <div id="sectionsContainer"></div>
+
+    <footer>Все рецепты сохраняются в облаке. Доступны с любого устройства!</footer>
+</div>
+
+<script>
+    // Ключ будет подставлен автоматически при сборке GitHub Actions
+    const SUPABASE_URL = "https://cditcyoskzzgpzkhzpyd.supabase.co";
+    const SUPABASE_ANON_KEY = window.SUPABASE_KEY || null;
+
+    if (!SUPABASE_ANON_KEY) {
+        document.getElementById('syncStatus').innerHTML = '⚠️ Ошибка: ключ не загружен';
+        console.error('Ключ Supabase не найден');
+    }
+
+    const sections = [
+        { id: "breakfast", name: "🍳 Завтрак" },
+        { id: "snack", name: "🍎 Перекус" },
+        { id: "lunch", name: "🍲 Обед" },
+        { id: "afternoon", name: "☕ Полдник" },
+        { id: "dinner", name: "🌙 Ужин" }
+    ];
+
+    let recipesData = {
+        breakfast: [], snack: [], lunch: [], afternoon: [], dinner: []
+    };
+
+    async function supabaseRequest(method, path, body = null) {
+        if (!SUPABASE_ANON_KEY) {
+            throw new Error('Ключ Supabase не загружен');
+        }
+        
+        const url = `${SUPABASE_URL}/rest/v1/${path}`;
+        const headers = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+        };
+        
+        const options = { method, headers };
+        if (body) options.body = JSON.stringify(body);
+        
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
+        }
+        return response.json();
+    }
+
+    async function loadRecipesFromCloud() {
+        try {
+            const data = await supabaseRequest('GET', 'recipes?order=created_at.asc');
+            const newData = {
+                breakfast: [], snack: [], lunch: [], afternoon: [], dinner: []
+            };
+            
+            for (const recipe of data) {
+                const sectionId = recipe.section;
+                if (newData[sectionId]) {
+                    newData[sectionId].push({
+                        id: recipe.id,
+                        title: recipe.title,
+                        ingredients: recipe.ingredients,
+                        method: recipe.method,
+                        img: recipe.image_base64
+                    });
+                }
+            }
+            
+            recipesData = newData;
+            document.getElementById('syncStatus').innerHTML = '✅ Синхронизировано с облаком';
+            return true;
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+            document.getElementById('syncStatus').innerHTML = '⚠️ Ошибка синхронизации. Проверь интернет.';
+            return false;
+        }
+    }
+
+    async function addRecipeToCloud(sectionId, recipe) {
+        try {
+            const newRecipe = {
+                id: recipe.id,
+                section: sectionId,
+                title: recipe.title,
+                ingredients: recipe.ingredients,
+                method: recipe.method,
+                image_base64: recipe.img || null
+            };
+            await supabaseRequest('POST', 'recipes', newRecipe);
+            return true;
+        } catch (error) {
+            console.error('Ошибка добавления:', error);
+            return false;
+        }
+    }
+
+    async function updateRecipeInCloud(recipeId, updatedData) {
+        try {
+            await supabaseRequest('PATCH', `recipes?id=eq.${recipeId}`, updatedData);
+            return true;
+        } catch (error) {
+            console.error('Ошибка обновления:', error);
+            return false;
+        }
+    }
+
+    async function deleteRecipeFromCloud(recipeId) {
+        try {
+            await supabaseRequest('DELETE', `recipes?id=eq.${recipeId}`);
+            return true;
+        } catch (error) {
+            console.error('Ошибка удаления:', error);
+            return false;
+        }
+    }
+
+    function generateId() {
+        return Date.now() + '-' + Math.random().toString(36).substr(2, 8);
+    }
+
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    async function addRecipe(sectionId, newRecipe, imageFile) {
+        if (imageFile) {
+            try {
+                newRecipe.img = await fileToBase64(imageFile);
+            } catch (error) {
+                console.error("Ошибка загрузки изображения:", error);
+            }
+        }
+        
+        const id = generateId();
+        const recipeWithId = { ...newRecipe, id };
+        
+        const success = await addRecipeToCloud(sectionId, recipeWithId);
+        if (success) {
+            recipesData[sectionId].push(recipeWithId);
+            renderCurrentSection(sectionId);
+            document.getElementById('syncStatus').innerHTML = '✅ Сохранено в облаке';
+            setTimeout(() => {
+                document.getElementById('syncStatus').innerHTML = '✅ Синхронизировано с облаком';
+            }, 2000);
+        } else {
+            alert('Ошибка сохранения. Проверь интернет.');
+        }
+    }
+
+    async function editRecipe(sectionId, recipeId) {
+        const recipe = recipesData[sectionId].find(r => r.id === recipeId);
+        if (!recipe) return;
+        
+        const modalHtml = `
+            <div id="editModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+                <div style="background:white; border-radius:28px; padding:24px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto;">
+                    <h3 style="margin-bottom:20px;">✏️ Редактировать рецепт</h3>
+                    <div class="form-row">
+                        <label>Фото</label>
+                        <div class="file-input-wrapper">
+                            <div class="file-input-label">Выбрать новое фото</div>
+                            <input type="file" id="editImageInput" accept="image/*">
+                        </div>
+                        ${recipe.img ? `<div style="margin-top:10px;"><img src="${recipe.img}" style="max-width:100px; border-radius:8px;"></div>` : ''}
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="editTitle" placeholder="Название блюда" value="${escapeHtml(recipe.title)}">
+                    </div>
+                    <div class="form-row">
+                        <textarea id="editIngredients" rows="3" placeholder="Состав продуктов">${escapeHtml(recipe.ingredients)}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <textarea id="editMethod" rows="4" placeholder="Способ приготовления">${escapeHtml(recipe.method)}</textarea>
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <button onclick="closeModal()" style="padding:8px 16px; border-radius:40px; border:1px solid #ccc; background:white;">Отмена</button>
+                        <button onclick="saveEdit('${sectionId}', '${recipeId}')" style="padding:8px 16px; border-radius:40px; background:#a55233; color:white; border:none;">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        window.closeModal = function() {
+            const modal = document.getElementById('editModal');
+            if (modal) modal.remove();
+        };
+        
+        window.saveEdit = async function(sId, rId) {
+            const newTitle = document.getElementById('editTitle').value;
+            const newIngredients = document.getElementById('editIngredients').value;
+            const newMethod = document.getElementById('editMethod').value;
+            const imageFile = document.getElementById('editImageInput').files[0];
+            
+            if (!newTitle || !newIngredients || !newMethod) {
+                alert("Заполните все поля!");
+                return;
+            }
+            
+            let newImg = recipe.img;
+            if (imageFile) {
+                newImg = await fileToBase64(imageFile);
+            }
+            
+            const updatedRecipe = {
+                title: newTitle,
+                ingredients: newIngredients,
+                method: newMethod,
+                image_base64: newImg
+            };
+            
+            const success = await updateRecipeInCloud(rId, updatedRecipe);
+            if (success) {
+                recipe.title = newTitle;
+                recipe.ingredients = newIngredients;
+                recipe.method = newMethod;
+                recipe.img = newImg;
+                renderCurrentSection(sId);
+                document.getElementById('syncStatus').innerHTML = '✅ Обновлено в облаке';
+                setTimeout(() => {
+                    document.getElementById('syncStatus').innerHTML = '✅ Синхронизировано с облаком';
+                }, 2000);
+            } else {
+                alert('Ошибка обновления');
+            }
+            closeModal();
+        };
+    }
+
+    async function deleteRecipe(sectionId, recipeId) {
+        const success = await deleteRecipeFromCloud(recipeId);
+        if (success) {
+            recipesData[sectionId] = recipesData[sectionId].filter(r => r.id !== recipeId);
+            renderCurrentSection(sectionId);
+            document.getElementById('syncStatus').innerHTML = '🗑 Удалено из облака';
+            setTimeout(() => {
+                document.getElementById('syncStatus').innerHTML = '✅ Синхронизировано с облаком';
+            }, 2000);
+        } else {
+            alert('Ошибка удаления');
+        }
+    }
+
+    function renderCurrentSection(sectionId) {
+        const sectionDiv = document.getElementById(`section-${sectionId}`);
+        if (!sectionDiv) return;
+        const recipes = recipesData[sectionId] || [];
+        const grid = sectionDiv.querySelector('.recipe-grid');
+        if (!grid) return;
+        
+        if (recipes.length === 0) {
+            grid.innerHTML = `<div class="empty-msg">🍽️ Пока нет рецептов. Добавьте первый!</div>`;
+            return;
+        }
+        
+        grid.innerHTML = recipes.map(recipe => `
+            <div class="recipe-card">
+                <img class="recipe-img" src="${recipe.img || 'https://placehold.co/600x400/F7E5CC/8B5A2B?text=Блюдо'}" alt="блюдо">
+                <div class="recipe-content">
+                    <div class="recipe-title">${escapeHtml(recipe.title)}</div>
+                    <div class="ingredients"><strong>🥕 Состав:</strong><br> ${escapeHtml(recipe.ingredients)}</div>
+                    <div class="method"><strong>🍳 Приготовление:</strong><br> ${escapeHtml(recipe.method)}</div>
+                    <div class="card-buttons">
+                        <button class="edit-btn" data-id="${recipe.id}">✏️ Редактировать</button>
+                        <button class="delete-btn" data-id="${recipe.id}">🗑 Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        grid.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const recipeId = btn.getAttribute('data-id');
+                editRecipe(sectionId, recipeId);
+            });
+        });
+        
+        grid.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const recipeId = btn.getAttribute('data-id');
+                if (confirm('Удалить рецепт?')) {
+                    deleteRecipe(sectionId, recipeId);
+                }
+            });
+        });
+    }
+    
+    function setupFormHandler(sectionId) {
+        const form = document.getElementById(`form-${sectionId}`);
+        if (!form) return;
+        
+        const imageInput = form.querySelector('[name="image"]');
+        const previewDiv = form.querySelector('.image-preview');
+        
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && previewDiv) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewDiv.style.display = 'block';
+                    previewDiv.innerHTML = `<img src="${event.target.result}" alt="preview">`;
+                };
+                reader.readAsDataURL(file);
+            } else if (previewDiv) {
+                previewDiv.style.display = 'none';
+                previewDiv.innerHTML = '';
+            }
+        });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = form.querySelector('[name="title"]').value.trim();
+            const ingredients = form.querySelector('[name="ingredients"]').value.trim();
+            const method = form.querySelector('[name="method"]').value.trim();
+            const imageFile = form.querySelector('[name="image"]').files[0];
+            
+            if (!title || !ingredients || !method) {
+                alert("Заполните название, состав и способ приготовления!");
+                return;
+            }
+            
+            const newRecipe = {
+                title: title,
+                ingredients: ingredients,
+                method: method,
+                img: null
+            };
+            
+            await addRecipe(sectionId, newRecipe, imageFile);
+            form.reset();
+            if (previewDiv) {
+                previewDiv.style.display = 'none';
+                previewDiv.innerHTML = '';
+            }
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    async function buildUI() {
+        const sectionsContainer = document.getElementById('sectionsContainer');
+        sectionsContainer.innerHTML = '<div class="loading">⏳ Загрузка рецептов из облака...</div>';
+        
+        await loadRecipesFromCloud();
+        
+        const tabsContainer = document.getElementById('tabsContainer');
+        sectionsContainer.innerHTML = '';
+        tabsContainer.innerHTML = '';
+        
+        sections.forEach((sec, idx) => {
+            const btn = document.createElement('button');
+            btn.textContent = sec.name;
+            btn.classList.add('tab-btn');
+            if (idx === 0) btn.classList.add('active');
+            btn.dataset.tab = sec.id;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(`section-${sec.id}`).classList.add('active');
+                renderCurrentSection(sec.id);
+            });
+            tabsContainer.appendChild(btn);
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.id = `section-${sec.id}`;
+            sectionDiv.classList.add('section');
+            if (idx === 0) sectionDiv.classList.add('active');
+            sectionDiv.innerHTML = `
+                <div class="add-recipe-form">
+                    <h3>➕ Новый рецепт в "${sec.name}"</h3>
+                    <form id="form-${sec.id}">
+                        <div class="form-row">
+                            <label>📸 Фото блюда</label>
+                            <div class="file-input-wrapper">
+                                <div class="file-input-label">Выбрать фотографию</div>
+                                <input type="file" name="image" accept="image/*">
+                            </div>
+                            <div class="image-preview"></div>
+                        </div>
+                        <div class="form-row">
+                            <input type="text" name="title" placeholder="Название блюда *" required>
+                        </div>
+                        <div class="form-row">
+                            <textarea name="ingredients" rows="2" placeholder="Состав продуктов *" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <textarea name="method" rows="3" placeholder="Способ приготовления *" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <button type="submit" class="submit-btn">✨ Сохранить рецепт</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="recipe-grid"></div>
+            `;
+            sectionsContainer.appendChild(sectionDiv);
+            setupFormHandler(sec.id);
+            renderCurrentSection(sec.id);
+        });
+    }
+    
+    buildUI();
+</script>
+</body>
+</html>
