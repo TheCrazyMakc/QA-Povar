@@ -229,7 +229,7 @@
 
 <script>
     const SUPABASE_URL = "https://cditcyoskzzgpzkhzpyd.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.твой_полный_ключ_сюда";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkaXRjeW9za3p6Z3B6a2h6cHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNTE1MDIsImV4cCI6MjA5NjYyNzUwMn0.zTXqlQT2-nnAvpP7jotL5_isgDBFQ0Dk9WZudfopzEU";
 
     const sections = [
         { id: "breakfast", name: "🍳 Завтрак" },
@@ -290,22 +290,46 @@
     }
 
     async function supabaseRequest(method, path, body = null) {
-        const url = `${SUPABASE_URL}/rest/v1/${path}`;
-        const headers = {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-        };
-        
-        const options = { method, headers };
-        if (body) options.body = JSON.stringify(body);
-        
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`);
-        }
-        return response.json();
+    const url = `${SUPABASE_URL}/rest/v1/${path}`;
+    
+    // Кодируем ключ в безопасный формат
+    const encodedKey = encodeURIComponent(SUPABASE_ANON_KEY);
+    
+    const headers = {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+    };
+    
+    const options = { 
+        method: method, 
+        headers: headers 
+    };
+    
+    if (body) {
+        options.body = JSON.stringify(body);
     }
+    
+    try {
+        const response = await fetch(url, options);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error:', errorText);
+            throw new Error(`Ошибка ${response.status}: ${errorText}`);
+        }
+        
+        // Если ответ пустой (204 No Content)
+        if (response.status === 204) {
+            return null;
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
+    }
+}
 
     async function loadRecipesFromCloud() {
         try {
